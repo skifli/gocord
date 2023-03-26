@@ -374,9 +374,7 @@ func (gateway *Gateway) Connect() error {
 	conn, resp, err := websocket.DefaultDialer.Dial(gateway.GatewayURL, headers)
 
 	if resp.StatusCode == 404 { // WebSocket URL was invalid, try getting the latest from the API.
-		err = getGatewayURL()
-
-		if err != nil {
+		if err = getGatewayURL(); err != nil {
 			return err
 		}
 
@@ -386,7 +384,6 @@ func (gateway *Gateway) Connect() error {
 	}
 
 	gateway.Conn = conn
-	conn = nil
 
 	if err = gateway.gatewayHello(); err != nil {
 		return err
