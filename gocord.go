@@ -42,3 +42,7 @@ func (client *Client) Init() error {
 func (client *Client) Run() error {
 	return client.Gateway.Connect()
 }
+
+func (client *Client) AddEventHandler(event api.GatewayEventName, function any) error {
+	return client.Gateway.Handlers.Add(event, function)
+}

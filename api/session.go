@@ -30,6 +30,7 @@ type Gateway struct {
 	CloseChan         chan struct{}   // CloseChan is used as a signal to stop for the gateway's goroutines.
 	Conn              *websocket.Conn // Conn represents a connection to the Discord WebSocket.
 	GatewayURL        string          // GatewayURL contains the URL used when resuming after a disconnect.
+	Handlers          *Handlers       // Handles for gateway events
 	HeartbeatInterval time.Duration   // The interval the client should wait between sending heartbeats.
 	LastSeq           float64         // LastSeq contains the last sequence number received by the client.
 	SessionID         string          // SessionID contains the ID of the gateway.
@@ -77,6 +78,7 @@ func (user *User) GetData() error {
 func CreateGateway(user *User) *Gateway {
 	return &Gateway{
 		CloseChan: make(chan struct{}),
+		Handlers:  new(Handlers),
 		User:      user,
 	}
 }
@@ -222,6 +224,16 @@ func (gateway *Gateway) gatewayHello() error {
 	gateway.HeartbeatInterval = time.Duration(payload["d"].(genericMap)["heartbeat_interval"].(float64))
 
 	go gateway.startHeartbeatSender()
+
+	helloEvent := new(GatewayEventHello)
+
+	if err = createGatewayEvent(payload, helloEvent); err != nil {
+		panic(err)
+	}
+
+	for _, handler := range gateway.Handlers.OnHello {
+		go handler(helloEvent)
+	}
 
 	return nil
 }

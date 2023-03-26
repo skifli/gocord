@@ -1,6 +1,11 @@
 package gocord
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+
+	"github.com/skifli/gocord/api"
+)
 
 func check(err error) {
 	if err != nil {
@@ -15,6 +20,10 @@ func TestMain(t *testing.T) {
 
 	err := client.Init()
 	check(err)
+
+	client.AddEventHandler(api.GatewayEventNameHello, func(event *api.GatewayEventHello) {
+		fmt.Printf("%#v\n", event) // Testing the event handler
+	})
 
 	err = client.Run()
 	check(err)
