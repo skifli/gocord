@@ -9,32 +9,24 @@ import (
 // Client represents a Discord self-bot.
 type Client struct {
 	Gateway *api.Gateway // Gateway contains data relating to a Discord WebSocket connection.
-	User    *api.User    // User contains data relating to the user.
+	SelfBot *api.SelfBot // SelfBot contains data relating to the self-bot.
 }
 
-// Creates a user struct, used when initializing a Client struct.
-func UserToken(token string) *api.User {
-	return &api.User{
-		Discriminator: "",
-		ID:            "",
-		Locale:        "",
-		Token:         token,
-		Username:      "",
+// Creates a SelfBot struct, used when initializing a Client struct.
+func SelfBotToken(token string) *api.SelfBot {
+	return &api.SelfBot{
+		Token: token,
 	}
 }
 
 func (client *Client) Init() error {
-	if client.User == nil {
-		return errors.New("user not supplied")
-	} else if client.User.Token == "" {
-		return errors.New("user's token not supplied")
+	if client.SelfBot == nil {
+		return errors.New("self-bot data not supplied")
+	} else if client.SelfBot.Token == "" {
+		return errors.New("self-bot's token not supplied")
 	}
 
-	if err := client.User.GetData(); err != nil {
-		return err
-	}
-
-	client.Gateway = api.CreateGateway(client.User)
+	client.Gateway = api.CreateGateway(client.SelfBot)
 
 	return nil
 }

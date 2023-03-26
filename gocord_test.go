@@ -15,7 +15,7 @@ func check(err error) {
 
 func TestMain(t *testing.T) {
 	client := &Client{
-		User: UserToken(""),
+		SelfBot: SelfBotToken(""),
 	}
 
 	err := client.Init()

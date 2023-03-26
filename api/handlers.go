@@ -10,7 +10,7 @@ import (
 // Handlers contains handlers for gateway events.
 type Handlers struct {
 	OnHello []func(*GatewayEventHello)
-	mutex   sync.Mutex
+	mutex   sync.Mutex // Used to prevents concurrent writes to the handlers.
 }
 
 func (handlers *Handlers) Add(event GatewayEventName, function any) error {
@@ -44,4 +44,11 @@ func createGatewayEvent(payload genericMap, container any) error {
 // Hello Structure - https://discord.com/developers/docs/topics/gateway-events#hello-hello-structure
 type GatewayEventHello struct {
 	HeartbeatInterval float64 `mapstructure:"heartbeat_interval"` // In milliseconds
+}
+
+// Ready Event Fields - https://discord.com/developers/docs/topics/gateway-events#ready-ready-event-fields
+type GatewayEventReady struct {
+	ResumeGatewayURL string  `mapstructure:"resume_gateway_url"`
+	SessionID        string  `mapstructure:"session_id"`
+	Version          float64 `mapstructure:"v"`
 }

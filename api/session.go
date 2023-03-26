@@ -16,15 +16,6 @@ var (
 	headers           = make(http.Header)
 )
 
-// User contains a self-bot's data.
-type User struct {
-	Discriminator string // Discriminator e.g. `0001`.
-	ID            string // ID            e.g. `000000000000000000`.
-	Locale        string // Locale        e.g. `en-GB`.
-	Token         string // Token         e.g. ``.
-	Username      string // Username      e.g. `user`.
-}
-
 // Gateway represents a Discord WebSocket connection.
 type Gateway struct {
 	CloseChan         chan struct{}   // CloseChan is used as a signal to stop for the gateway's goroutines.
@@ -33,53 +24,15 @@ type Gateway struct {
 	Handlers          *Handlers       // Handles for gateway events
 	HeartbeatInterval time.Duration   // The interval the client should wait between sending heartbeats.
 	LastSeq           float64         // LastSeq contains the last sequence number received by the client.
+	SelfBot           *SelfBot        // SelfBot contains data relating to the self-bot.
 	SessionID         string          // SessionID contains the ID of the gateway.
-	User              *User           // User contains data relating to the user.
 }
 
-type GatewayClosure struct{}
-
-func (err *GatewayClosure) Error() string {
-	return "gateway closed"
-}
-
-func (user *User) GetData() error {
-	req := fasthttp.AcquireRequest()
-	defer fasthttp.ReleaseRequest(req)
-
-	resp := fasthttp.AcquireResponse()
-	defer fasthttp.ReleaseResponse(resp)
-
-	req.Header.Set("Authorization", user.Token)
-	req.SetRequestURI("https://discord.com/api/v" + API_VERSION + "/users/@me")
-
-	err := requestClient.Do(req, resp)
-
-	if err != nil {
-		return err
-	} else if resp.StatusCode() < 200 || resp.StatusCode() > 299 {
-		return fmt.Errorf("invalid token (received status code %d)", resp.StatusCode())
-	}
-
-	var jsonMap = make(genericMap)
-
-	if err = json.Unmarshal(resp.Body(), &jsonMap); err != nil {
-		return err
-	}
-
-	user.Discriminator = jsonMap["discriminator"].(string)
-	user.ID = jsonMap["id"].(string)
-	user.Locale = jsonMap["locale"].(string)
-	user.Username = jsonMap["username"].(string)
-
-	return nil
-}
-
-func CreateGateway(user *User) *Gateway {
+func CreateGateway(selfBot *SelfBot) *Gateway {
 	return &Gateway{
 		CloseChan: make(chan struct{}),
 		Handlers:  new(Handlers),
-		User:      user,
+		SelfBot:   selfBot,
 	}
 }
 
@@ -115,17 +68,22 @@ func (gateway *Gateway) readMessage() (genericMap, error) {
 	_, message, err := gateway.Conn.ReadMessage()
 
 	if err != nil {
-		if ce, ok := err.(*websocket.CloseError); ok {
-			switch ce.Code {
-			case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived: // Websocket closed without any close code.
-				gateway.LastSeq = 0
-				gateway.SessionID = ""
+		closeError := err.(*websocket.CloseError)
 
-				go gateway.reconnect()
-				return nil, &GatewayClosure{}
-			}
-		} else {
+		switch closeError.Code {
+		case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived: // Websocket closed without any close code.
+			go gateway.reset()
 			return nil, err
+		default:
+			if closeEvent, ok := GatewayCloseEvents[closeError.Code]; ok {
+				if closeEvent.Reconnect { // If the session is reconnectable.
+					go gateway.reconnect()
+				}
+
+				return nil, closeEvent
+			} else {
+				return nil, err
+			}
 		}
 	}
 
@@ -148,20 +106,22 @@ func (gateway *Gateway) sendMessage(jsonPayload genericMap, reconnect bool) erro
 	err = gateway.Conn.WriteMessage(websocket.TextMessage, payload)
 
 	if err != nil {
-		if ce, ok := err.(*websocket.CloseError); ok {
-			switch ce.Code {
-			case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived: // Websocket closed without any close code.
-				if reconnect {
-					gateway.LastSeq = 0
-					gateway.SessionID = ""
+		closeError := err.(*websocket.CloseError)
 
+		switch closeError.Code {
+		case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived: // Websocket closed without any close code.
+			go gateway.reset()
+			return err
+		default:
+			if closeEvent, ok := GatewayCloseEvents[closeError.Code]; ok {
+				if closeEvent.Reconnect { // If the session is reconnectable.
 					go gateway.reconnect()
 				}
 
-				return &GatewayClosure{}
+				return closeEvent
+			} else {
+				return err
 			}
-		} else {
-			return err
 		}
 	}
 
@@ -192,11 +152,7 @@ func (gateway *Gateway) startHeartbeatSender() {
 		select {
 		case <-ticker.C:
 			if err := gateway.sendHeartbeat(); err != nil {
-				if (err == &GatewayClosure{}) {
-					return
-				}
-
-				continue
+				return
 			}
 		case <-gateway.CloseChan:
 			return
@@ -210,10 +166,6 @@ func (gateway *Gateway) gatewayHello() error {
 	payload, err := gateway.readMessage()
 
 	if err != nil {
-		if (err == &GatewayClosure{}) { // WebSocket closed.
-			return gateway.reconnect()
-		}
-
 		return err
 	}
 
@@ -228,7 +180,7 @@ func (gateway *Gateway) gatewayHello() error {
 	helloEvent := new(GatewayEventHello)
 
 	if err = createGatewayEvent(payload, helloEvent); err != nil {
-		panic(err)
+		return err
 	}
 
 	for _, handler := range gateway.Handlers.OnHello {
@@ -245,7 +197,7 @@ func (gateway *Gateway) gatewayIdentify() error {
 		err = gateway.sendMessage(genericMap{
 			"op": GatewayOPCodeResume,
 			"d": genericMap{
-				"token":      gateway.User.Token,
+				"token":      gateway.SelfBot.Token,
 				"session_id": gateway.SessionID,
 				"seq":        int(gateway.LastSeq)},
 		}, false)
@@ -267,13 +219,13 @@ func (gateway *Gateway) gatewayIdentify() error {
 			"op":       GatewayOPCodeIdentify,
 			"compress": false,
 			"d": genericMap{
-				"token":       gateway.User.Token,
+				"token":       gateway.SelfBot.Token,
 				"capabilties": CAPABILITIES,
 				"properties": genericMap{
 					"os":                       OS,
 					"broswer":                  BROWSER,
 					"device":                   DEVICE,
-					"system_locale":            gateway.User.Locale,
+					"system_locale":            systemLocale,
 					"browser_user_agent":       USER_AGENT,
 					"browser_version":          BROWSER_VERSION,
 					"os_version":               OS_VERSION,
@@ -315,12 +267,8 @@ func (gateway *Gateway) startMessageHandler() {
 	for {
 		message, err := gateway.readMessage()
 
-		if err != nil {
-			if (err == &GatewayClosure{}) { // WebSocket closed.
-				return
-			}
-
-			continue
+		if err != nil { // Error occured, assume readMessage handled it.
+			return
 		}
 
 		fmt.Printf("%v\n\n", message)
@@ -336,7 +284,7 @@ func (gateway *Gateway) startMessageHandler() {
 			continue
 		}
 
-		if message["s"] != nil { // Some payloads, for example the heartbeat ack, don't contain contribute to the sequence ID.
+		if message["s"] != nil { // Some payloads, for example the heartbeat ack, don't contribute to the sequence ID.
 			gateway.LastSeq = message["s"].(float64)
 		}
 	}
@@ -346,10 +294,6 @@ func (gateway *Gateway) gatewayReady() error {
 	payload, err := gateway.readMessage()
 
 	if err != nil {
-		if (err == &GatewayClosure{}) { // WebSocket closed.
-			return gateway.reconnect()
-		}
-
 		return err
 	}
 
@@ -371,6 +315,13 @@ func (gateway *Gateway) gatewayReady() error {
 
 func (gateway *Gateway) reconnect() error {
 	return gateway.Connect()
+}
+
+func (gateway *Gateway) reset() error {
+	gateway.LastSeq = 0
+	gateway.SessionID = ""
+
+	return gateway.reconnect()
 }
 
 func (gateway *Gateway) Connect() error {
