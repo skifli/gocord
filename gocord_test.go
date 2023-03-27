@@ -1,10 +1,7 @@
 package gocord
 
 import (
-	"fmt"
 	"testing"
-
-	"github.com/skifli/gocord/api"
 )
 
 func check(err error) {
@@ -18,13 +15,7 @@ func TestMain(t *testing.T) {
 		SelfBot: SelfBotToken(""),
 	}
 
-	err := client.Init()
-	check(err)
+	check(client.Init())
 
-	client.AddEventHandler(api.GatewayEventNameHello, func(event *api.GatewayEventHello) {
-		fmt.Printf("%#v\n", event) // Testing the event handler
-	})
-
-	err = client.Run()
-	check(err)
+	check(client.Connect())
 }

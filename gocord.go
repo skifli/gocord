@@ -31,7 +31,7 @@ func (client *Client) Init() error {
 	return nil
 }
 
-func (client *Client) Run() error {
+func (client *Client) Connect() error {
 	return client.Gateway.Connect()
 }
 

@@ -179,7 +179,7 @@ func (gateway *Gateway) gatewayHello() error {
 
 	helloEvent := new(GatewayEventHello)
 
-	if err = createGatewayEvent(payload, helloEvent); err != nil {
+	if err = createGatewayEvent(payload["d"].(genericMap), helloEvent); err != nil {
 		return err
 	}
 
@@ -305,6 +305,10 @@ func (gateway *Gateway) gatewayReady() error {
 		return gateway.reconnect()
 	} else if opcode != GatewayOPCodeDispatch {
 		return fmt.Errorf("unexpected opcode when parsing ready event (expected %f, got %f)", GatewayOPCodeDispatch, payload["op"].(float64))
+	}
+
+	if err = createGatewayEvent(payload["d"].(genericMap)["user"].(genericMap), gateway.SelfBot); err != nil {
+		return err
 	}
 
 	gateway.GatewayURL = payload["d"].(genericMap)["resume_gateway_url"].(string)

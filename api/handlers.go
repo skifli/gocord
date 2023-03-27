@@ -38,7 +38,7 @@ func (handlers *Handlers) Add(event GatewayEventName, function any) error {
 }
 
 func createGatewayEvent(payload genericMap, container any) error {
-	return mapstructure.Decode(payload["d"], &container)
+	return mapstructure.Decode(payload, &container)
 }
 
 // Hello Structure - https://discord.com/developers/docs/topics/gateway-events#hello-hello-structure

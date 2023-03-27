@@ -2,24 +2,45 @@ package api
 
 // User represents a Discord user.
 type User struct {
-	PublicFlags   BitFlag `mapstructure:"public_flag,omitempty"`
-	PremiumType   Flag    `mapstructure:"premium_type,omitempty"`
-	Flags         BitFlag `mapstructure:"flag,omitempty"`
+	AccentColor   int     `mapstructure:"accent_color"`
 	Avatar        string  `mapstructure:"avatar"`
-	Bot           bool    `mapstructure:"bot,omitempty"`
-	System        bool    `mapstructure:"system,omitempty"`
-	MFAEnabled    bool    `mapstructure:"mfa_enabled,omitempty"`
-	Banner        string  `mapstructure:"banner,omitempty"`
-	AccentColor   int     `mapstructure:"accent_color,omitempty"`
-	Locale        string  `mapstructure:"locale,omitempty"`
-	Verified      bool    `mapstructure:"verified,omitempty"`
-	Email         string  `mapstructure:"email,omitempty"`
+	Banner        string  `mapstructure:"banner"`
+	Bot           bool    `mapstructure:"bot"`
 	Discriminator string  `mapstructure:"discriminator"`
-	Username      string  `mapstructure:"username"`
+	Email         string  `mapstructure:"email"`
+	Flags         BitFlag `mapstructure:"flag"`
 	ID            string  `mapstructure:"id"`
+	Locale        string  `mapstructure:"locale"`
+	MFAEnabled    bool    `mapstructure:"mfa_enabled"`
+	PremiumType   Flag    `mapstructure:"premium_type"`
+	PublicFlags   BitFlag `mapstructure:"public_flag"`
+	System        bool    `mapstructure:"system"`
+	Username      string  `mapstructure:"username"`
+	Verified      bool    `mapstructure:"verified"`
 }
 
 // Me represents the self-bot.
 type SelfBot struct {
-	Token string
+	AccentColor    float64 `mapstructure:"accent_color"`
+	Avatar         string  `mapstructure:"avatar"`
+	BannerColor    string  `mapstructure:"banner_color"`
+	Bio            string  `mapstructure:"bio"`
+	Desktop        bool    `mapstructure:"desktop"`
+	Discriminator  string  `mapstructure:"discriminator"`
+	DisplayName    string  `mapstructure:"display_name"`
+	Email          string  `mapstructure:"email"`
+	Flags          float64 `mapstructure:"flags"`
+	GlobalName     string  `mapstructure:"global_name"`
+	ID             string  `mapstructure:"id"`
+	MFAEnabled     bool    `mapstructure:"mfa_enabled"`
+	Mobile         bool    `mapstructure:"mobile"`
+	NSFWAllowed    bool    `mapstructure:"nsfw_allowed"`
+	Phone          string  `mapstructure:"phone"`
+	Premium        bool    `mapstructure:"premium"`
+	PremiumType    float64 `mapstructure:"premium_type"`
+	PublicFlags    float64 `mapstructure:"public_flags"`
+	PurchasedFlags float64 `mapstructure:"purchased_flags"`
+	Username       string  `mapstructure:"username"`
+	Verified       bool    `mapstructure:"verified"`
+	Token          string
 }
