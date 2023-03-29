@@ -13,8 +13,8 @@ var (
 	systemLocale      = mustGetSystemLocale()
 	requestClient     = fasthttp.Client{
 		ReadBufferSize:                8192,
-		ReadTimeout:                   time.Duration(time.Second),
-		WriteTimeout:                  time.Duration(time.Second),
+		ReadTimeout:                   time.Duration(time.Second * 5),
+		WriteTimeout:                  time.Duration(time.Second * 5),
 		NoDefaultUserAgentHeader:      true,
 		DisableHeaderNamesNormalizing: true,
 		DisablePathNormalizing:        true,

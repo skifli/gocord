@@ -314,6 +314,16 @@ func (gateway *Gateway) gatewayReady() error {
 	gateway.GatewayURL = payload["d"].(genericMap)["resume_gateway_url"].(string)
 	gateway.SessionID = payload["d"].(genericMap)["session_id"].(string)
 
+	readyEvent := new(GatewayEventReady)
+
+	if err = createGatewayEvent(payload["d"].(genericMap), readyEvent); err != nil {
+		return err
+	}
+
+	for _, handler := range gateway.Handlers.OnReady {
+		go handler(readyEvent)
+	}
+
 	return nil
 }
 

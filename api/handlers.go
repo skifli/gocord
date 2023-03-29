@@ -10,6 +10,7 @@ import (
 // Handlers contains handlers for gateway events.
 type Handlers struct {
 	OnHello []func(*GatewayEventHello)
+	OnReady []func(*GatewayEventReady)
 	mutex   sync.Mutex // Used to prevents concurrent writes to the handlers.
 }
 
@@ -23,6 +24,12 @@ func (handlers *Handlers) Add(event GatewayEventName, function any) error {
 	case GatewayEventNameHello:
 		if function, ok := function.(func(*GatewayEventHello)); ok {
 			handlers.OnHello = append(handlers.OnHello, function)
+		} else {
+			failed = true
+		}
+	case GatewayEventNameReady:
+		if function, ok := function.(func(*GatewayEventReady)); ok {
+			handlers.OnReady = append(handlers.OnReady, function)
 		} else {
 			failed = true
 		}
