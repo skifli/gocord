@@ -55,8 +55,8 @@ type GatewayEventHello struct {
 
 // Ready Event Fields - https://discord.com/developers/docs/topics/gateway-events#ready-ready-event-fields
 type GatewayEventReady struct {
-	ResumeGatewayURL string  `mapstructure:"resume_gateway_url"`
-	SessionID        string  `mapstructure:"session_id"`
-	User             *User   `mapstructure:"user"`
-	Version          float64 `mapstructure:"v"`
+	ResumeGatewayURL string   `mapstructure:"resume_gateway_url"`
+	SessionID        string   `mapstructure:"session_id"`
+	User             *SelfBot `mapstructure:"user"`
+	Version          float64  `mapstructure:"v"`
 }
