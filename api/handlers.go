@@ -57,5 +57,6 @@ type GatewayEventHello struct {
 type GatewayEventReady struct {
 	ResumeGatewayURL string  `mapstructure:"resume_gateway_url"`
 	SessionID        string  `mapstructure:"session_id"`
+	User             *User   `mapstructure:"user"`
 	Version          float64 `mapstructure:"v"`
 }
