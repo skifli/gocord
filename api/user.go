@@ -29,7 +29,7 @@ type SelfBot struct {
 	Discriminator  string  `mapstructure:"discriminator"`
 	DisplayName    string  `mapstructure:"display_name"`
 	Email          string  `mapstructure:"email"`
-	Flags          float64 `mapstructure:"flags"`
+	Flags          BitFlag `mapstructure:"flags"`
 	GlobalName     string  `mapstructure:"global_name"`
 	ID             string  `mapstructure:"id"`
 	MFAEnabled     bool    `mapstructure:"mfa_enabled"`
@@ -38,8 +38,8 @@ type SelfBot struct {
 	Phone          string  `mapstructure:"phone"`
 	Premium        bool    `mapstructure:"premium"`
 	PremiumType    float64 `mapstructure:"premium_type"`
-	PublicFlags    float64 `mapstructure:"public_flags"`
-	PurchasedFlags float64 `mapstructure:"purchased_flags"`
+	PublicFlags    BitFlag `mapstructure:"public_flags"`
+	PurchasedFlags BitFlag `mapstructure:"purchased_flags"`
 	Username       string  `mapstructure:"username"`
 	Verified       bool    `mapstructure:"verified"`
 	Token          string

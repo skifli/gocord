@@ -21,7 +21,7 @@ func TestMain(t *testing.T) {
 	check(client.Init())
 
 	client.AddEventHandler(api.GatewayEventNameReady, func(event *api.GatewayEventReady) {
-		fmt.Printf("%#v\n", event)
+		fmt.Printf("%#v\n\n", event)
 	})
 
 	check(client.Connect())
