@@ -315,12 +315,13 @@ func (gateway *Gateway) gatewayReady() error {
 	gateway.SessionID = payload["d"].(genericMap)["session_id"].(string)
 
 	readyEvent := new(GatewayEventReady)
-	readyEvent.User.Token = gateway.SelfBot.Token
-	gateway.SelfBot = readyEvent.User
 
 	if err = createGatewayEvent(payload["d"].(genericMap), readyEvent); err != nil {
 		return err
 	}
+
+	readyEvent.User.Token = gateway.SelfBot.Token
+	gateway.SelfBot = readyEvent.User
 
 	for _, handler := range gateway.Handlers.OnReady {
 		go handler(readyEvent)
