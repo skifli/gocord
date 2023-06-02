@@ -278,6 +278,16 @@ func (gateway *Gateway) startMessageHandler() {
 		if op == GatewayOPCodeHeartbeat { // Discord is asking for a hearbeat.
 			gateway.sendHeartbeat()
 		} else if op == GatewayOPCodeReconnect {
+			recconectEvent := new(GatewayEventReconnect)
+
+			if err = createGatewayEvent(message, recconectEvent); err != nil {
+				panic(err)
+			}
+
+			for _, handler := range gateway.Handlers.OnReconnect {
+				go handler(recconectEvent)
+			}
+
 			gateway.reconnect()
 			return
 		} else if op == GatewayOPCodeHeartbeatACK { // Discord is acknowledging that we sent a heartbeat.

@@ -9,9 +9,10 @@ import (
 
 // Handlers contains handlers for gateway events.
 type Handlers struct {
-	OnHello []func(*GatewayEventHello)
-	OnReady []func(*GatewayEventReady)
-	mutex   sync.Mutex // Used to prevents concurrent writes to the handlers.
+	OnHello     []func(*GatewayEventHello)
+	OnReady     []func(*GatewayEventReady)
+	OnReconnect []func(*GatewayEventReconnect)
+	mutex       sync.Mutex // Used to prevents concurrent writes to the handlers.
 }
 
 func (handlers *Handlers) Add(event GatewayEventName, function any) error {
@@ -30,6 +31,12 @@ func (handlers *Handlers) Add(event GatewayEventName, function any) error {
 	case GatewayEventNameReady:
 		if function, ok := function.(func(*GatewayEventReady)); ok {
 			handlers.OnReady = append(handlers.OnReady, function)
+		} else {
+			failed = true
+		}
+	case GatewayEventNameReconnect:
+		if function, ok := function.(func(*GatewayEventReconnect)); ok {
+			handlers.OnReconnect = append(handlers.OnReconnect, function)
 		} else {
 			failed = true
 		}
@@ -59,4 +66,10 @@ type GatewayEventReady struct {
 	SessionID        string   `mapstructure:"session_id"`
 	User             *SelfBot `mapstructure:"user"`
 	Version          float64  `mapstructure:"v"`
+}
+
+// Reconnect Event Fields - https://discord.com/developers/docs/topics/gateway-events#reconnect-example-gateway-reconnect
+type GatewayEventReconnect struct {
+	OP float64 `mapstructure:"op"`
+	D  bool    `mapstructure:"d"`
 }
