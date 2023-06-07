@@ -72,3 +72,7 @@ type GatewayEventReady struct {
 type GatewayEventReconnect struct {
 	D bool `mapstructure:"d"`
 }
+
+type GatewayEventHeartbeat struct {
+	D float64 `mapstructure:"d"`
+}
