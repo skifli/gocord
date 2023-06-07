@@ -70,6 +70,5 @@ type GatewayEventReady struct {
 
 // Reconnect Event Fields - https://discord.com/developers/docs/topics/gateway-events#reconnect-example-gateway-reconnect
 type GatewayEventReconnect struct {
-	OP float64 `mapstructure:"op"`
-	D  bool    `mapstructure:"d"`
+	D bool `mapstructure:"d"`
 }
