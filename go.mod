@@ -6,7 +6,7 @@ require (
 	github.com/fasthttp/websocket v1.5.3 // Faster WebSocket implementation
 	github.com/goccy/go-json v0.10.2 // Faster JSON Parser
 	github.com/mitchellh/mapstructure v1.5.0 // Easy map to struct conversion
-	github.com/valyala/fasthttp v1.47.0 // Fast HTTPS requests
+	github.com/valyala/fasthttp v1.48.0 // Fast HTTPS requests
 )
 
 require github.com/jeandeaual/go-locale v0.0.0-20220711133428-7de61946b173
