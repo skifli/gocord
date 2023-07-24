@@ -4,38 +4,46 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/mitchellh/mapstructure"
+	"github.com/goccy/go-json"
+	"github.com/switchupcb/dasgo/dasgo"
 )
 
 // Handlers contains handlers for gateway events.
 type Handlers struct {
-	OnHello     []func(*GatewayEventHello)
-	OnReady     []func(*GatewayEventReady)
-	OnReconnect []func(*GatewayEventReconnect)
-	mutex       sync.Mutex // Used to prevents concurrent writes to the handlers.
+	OnHello         []func(*dasgo.Hello)
+	OnMessageCreate []func(*dasgo.Message)
+	OnReady         []func(*dasgo.Ready)
+	OnReconnect     []func(*dasgo.Reconnect)
+	mutex           sync.Mutex // Used to prevents concurrent writes to the handlers.
 }
 
-func (handlers *Handlers) Add(event GatewayEventName, function any) error {
+func (handlers *Handlers) Add(event string, function any) error {
 	handlers.mutex.Lock()
 	defer handlers.mutex.Unlock()
 
 	failed := false
 
 	switch event {
-	case GatewayEventNameHello:
-		if function, ok := function.(func(*GatewayEventHello)); ok {
+	case dasgo.FlagGatewayEventNameHello:
+		if function, ok := function.(func(*dasgo.Hello)); ok {
 			handlers.OnHello = append(handlers.OnHello, function)
 		} else {
 			failed = true
 		}
-	case GatewayEventNameReady:
-		if function, ok := function.(func(*GatewayEventReady)); ok {
+	case dasgo.FlagGatewayEventNameMessageCreate:
+		if function, ok := function.(func(*dasgo.Message)); ok {
+			handlers.OnMessageCreate = append(handlers.OnMessageCreate, function)
+		} else {
+			failed = true
+		}
+	case dasgo.FlagGatewayEventNameReady:
+		if function, ok := function.(func(*dasgo.Ready)); ok {
 			handlers.OnReady = append(handlers.OnReady, function)
 		} else {
 			failed = true
 		}
-	case GatewayEventNameReconnect:
-		if function, ok := function.(func(*GatewayEventReconnect)); ok {
+	case dasgo.FlagGatewayEventNameReconnect:
+		if function, ok := function.(func(*dasgo.Reconnect)); ok {
 			handlers.OnReconnect = append(handlers.OnReconnect, function)
 		} else {
 			failed = true
@@ -51,24 +59,16 @@ func (handlers *Handlers) Add(event GatewayEventName, function any) error {
 	return nil
 }
 
-func createGatewayEvent(payload genericMap, container any) error {
-	return mapstructure.Decode(payload, &container)
-}
+func createGatewayEvent(genericMap []byte, container any) error {
+	payload := new(dasgo.GatewayPayload)
 
-// Hello Structure - https://discord.com/developers/docs/topics/gateway-events#hello-hello-structure
-type GatewayEventHello struct {
-	HeartbeatInterval float64 `mapstructure:"heartbeat_interval"` // In milliseconds
-}
+	if err := json.Unmarshal(genericMap, payload); err != nil {
+		return err
+	}
 
-// Ready Event Fields - https://discord.com/developers/docs/topics/gateway-events#ready-ready-event-fields
-type GatewayEventReady struct {
-	ResumeGatewayURL string   `mapstructure:"resume_gateway_url"`
-	SessionID        string   `mapstructure:"session_id"`
-	User             *SelfBot `mapstructure:"user"`
-	Version          float64  `mapstructure:"v"`
-}
+	if err := json.Unmarshal(payload.Data, container); err != nil {
+		return err
+	}
 
-// Reconnect Event Fields - https://discord.com/developers/docs/topics/gateway-events#reconnect-example-gateway-reconnect
-type GatewayEventReconnect struct {
-	D bool `mapstructure:"d"`
+	return nil
 }

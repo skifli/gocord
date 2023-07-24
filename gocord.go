@@ -35,6 +35,6 @@ func (client *Client) Connect() error {
 	return client.Gateway.Connect()
 }
 
-func (client *Client) AddEventHandler(event api.GatewayEventName, function any) error {
+func (client *Client) AddEventHandler(event string, function any) error {
 	return client.Gateway.Handlers.Add(event, function)
 }

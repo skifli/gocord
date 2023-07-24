@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/skifli/gocord/api"
+	"github.com/switchupcb/dasgo/dasgo"
 )
 
 func check(err error) {
@@ -24,7 +24,7 @@ func TestMain(t *testing.T) {
 
 	check(client.Init())
 
-	client.AddEventHandler(api.GatewayEventNameReady, func(event *api.GatewayEventReady) {
+	client.AddEventHandler(dasgo.FlagGatewayEventNameMessageCreate, func(event *dasgo.Message) {
 		fmt.Printf("%#v\n\n", event)
 	})
 

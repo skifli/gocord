@@ -1,0 +1,117 @@
+{
+    "t": "MESSAGE_CREATE",
+    "s": 3,
+    "op": 0,
+    "d": {
+        "type": 19,
+        "tts": false,
+        "timestamp": "2023-07-24T11:09:44.231000+00:00",
+        "referenced_message": {
+            "type": 0,
+            "tts": false,
+            "timestamp": "2023-05-22T19:47:25.780000+00:00",
+            "pinned": false,
+            "mentions": [],
+            "mention_roles": [],
+            "mention_everyone": false,
+            "id": "1110292858793107587",
+            "flags": 0,
+            "embeds": [],
+            "edited_timestamp": null,
+            "content": "Lol",
+            "components": [],
+            "channel_id": "1074048036780646570",
+            "author": {
+                "username": "skifli",
+                "public_flags": 256,
+                "id": "1072069875993956372",
+                "global_name": null,
+                "discriminator": "0",
+                "avatar_decoration": null,
+                "avatar": "b8d9486689e3206458112cd07eefed9f"
+            },
+            "attachments": []
+        },
+        "pinned": false,
+        "nonce": "1132993040755982336",
+        "message_reference": {
+            "message_id": "1110292858793107587",
+            "guild_id": "1072195756557078528",
+            "channel_id": "1074048036780646570"
+        },
+        "mentions": [
+            {
+                "username": "skifli",
+                "public_flags": 256,
+                "member": {
+                    "roles": [
+                        "1072195949885145169",
+                        "1072205714568781957",
+                        "1072206001308188837"
+                    ],
+                    "premium_since": null,
+                    "pending": false,
+                    "nick": "Aneeq - skifli",
+                    "mute": false,
+                    "joined_at": "2023-02-06T16:43:08.884000+00:00",
+                    "flags": 0,
+                    "deaf": false,
+                    "communication_disabled_until": null,
+                    "avatar": null
+                },
+                "id": "1072069875993956372",
+                "global_name": null,
+                "discriminator": "0",
+                "avatar_decoration": null,
+                "avatar": "b8d9486689e3206458112cd07eefed9f"
+            }
+        ],
+        "mention_roles": [
+            "1072205714568781957"
+        ],
+        "mention_everyone": false,
+        "member": {
+            "roles": [
+                "1072195949885145169",
+                "1072205714568781957",
+                "1072206001308188837"
+            ],
+            "premium_since": null,
+            "pending": false,
+            "nick": "Aneeq - skifli",
+            "mute": false,
+            "joined_at": "2023-02-06T16:43:08.884000+00:00",
+            "flags": 0,
+            "deaf": false,
+            "communication_disabled_until": null,
+            "avatar": null
+        },
+        "id": "1132993012746682378",
+        "flags": 0,
+        "embeds": [],
+        "edited_timestamp": null,
+        "content": "<@&1072205714568781957> <@1072069875993956372> Ignore this",
+        "components": [],
+        "channel_id": "1074048036780646570",
+        "author": {
+            "username": "skifli",
+            "public_flags": 256,
+            "id": "1072069875993956372",
+            "global_name": null,
+            "discriminator": "0",
+            "avatar_decoration": null,
+            "avatar": "b8d9486689e3206458112cd07eefed9f"
+        },
+        "attachments": [
+            {
+                "url": "https://cdn.discordapp.com/attachments/1074048036780646570/1132993012394369074/txt",
+                "size": 10,
+                "proxy_url": "https://media.discordapp.net/attachments/1074048036780646570/1132993012394369074/txt",
+                "id": "1132993012394369074",
+                "filename": "txt",
+                "content_type": "text/plain; charset=utf-8"
+            }
+        ],
+        "guild_id": "1072195756557078528"
+    }
+}

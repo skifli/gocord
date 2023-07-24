@@ -7,6 +7,8 @@ import (
 
 	"github.com/fasthttp/websocket"
 	"github.com/goccy/go-json"
+	"github.com/mitchellh/mapstructure"
+	"github.com/switchupcb/dasgo/dasgo"
 	"github.com/valyala/fasthttp"
 )
 
@@ -64,7 +66,7 @@ func (gateway *Gateway) canReconnect() bool {
 	return gateway.SessionID != "" && gateway.GatewayURL != "" && gateway.LastSeq != 0
 }
 
-func (gateway *Gateway) readMessage() (genericMap, error) {
+func (gateway *Gateway) readMessage() ([]byte, genericMap, error) {
 	_, message, err := gateway.Conn.ReadMessage()
 
 	if err != nil {
@@ -73,16 +75,16 @@ func (gateway *Gateway) readMessage() (genericMap, error) {
 		switch closeError.Code {
 		case websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived: // Websocket closed without any close code.
 			go gateway.reset()
-			return nil, err
+			return nil, nil, err
 		default:
-			if closeEvent, ok := GatewayCloseEvents[closeError.Code]; ok {
+			if closeEvent, ok := dasgo.GatewayCloseEventCodes[closeError.Code]; ok {
 				if closeEvent.Reconnect { // If the session is reconnectable.
 					go gateway.reconnect()
 				}
 
-				return nil, closeEvent
+				return nil, nil, fmt.Errorf("gateway closed with code %d: %s - %s", closeEvent.Code, closeEvent.Description, closeEvent.Explanation)
 			} else {
-				return nil, err
+				return nil, nil, err
 			}
 		}
 	}
@@ -90,10 +92,10 @@ func (gateway *Gateway) readMessage() (genericMap, error) {
 	payload := make(genericMap)
 
 	if err = json.Unmarshal(message, &payload); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return payload, nil
+	return message, payload, nil
 }
 
 func (gateway *Gateway) sendMessage(jsonPayload genericMap, reconnect bool) error {
@@ -113,12 +115,12 @@ func (gateway *Gateway) sendMessage(jsonPayload genericMap, reconnect bool) erro
 			go gateway.reset()
 			return err
 		default:
-			if closeEvent, ok := GatewayCloseEvents[closeError.Code]; ok {
+			if closeEvent, ok := dasgo.GatewayCloseEventCodes[closeError.Code]; ok {
 				if closeEvent.Reconnect { // If the session is reconnectable.
 					go gateway.reconnect()
 				}
 
-				return closeEvent
+				return fmt.Errorf("gateway closed with code %d: %s - %s", closeEvent.Code, closeEvent.Description, closeEvent.Explanation)
 			} else {
 				return err
 			}
@@ -132,9 +134,9 @@ func (gateway *Gateway) sendHeartbeat() error {
 	var err error
 
 	if gateway.LastSeq == 0 {
-		err = gateway.sendMessage(genericMap{"op": GatewayOPCodeHeartbeat, "d": nil}, false)
+		err = gateway.sendMessage(genericMap{"op": dasgo.FlagGatewayOpcodeHeartbeat, "d": nil}, false)
 	} else {
-		err = gateway.sendMessage(genericMap{"op": GatewayOPCodeHeartbeat, "d": gateway.LastSeq}, false)
+		err = gateway.sendMessage(genericMap{"op": dasgo.FlagGatewayOpcodeHeartbeat, "d": gateway.LastSeq}, false)
 	}
 
 	if err != nil {
@@ -163,23 +165,23 @@ func (gateway *Gateway) startHeartbeatSender() {
 }
 
 func (gateway *Gateway) gatewayHello() error {
-	payload, err := gateway.readMessage()
+	payloadBytes, payload, err := gateway.readMessage()
 
 	if err != nil {
 		return err
 	}
 
-	if payload["op"].(float64) != GatewayOPCodeHello {
-		return fmt.Errorf("unexpected opcode when parsing hello event (expected %f, got %f)", GatewayOPCodeHello, payload["op"].(float64))
+	if payload["op"].(float64) != dasgo.FlagGatewayOpcodeHello {
+		return fmt.Errorf("unexpected opcode when parsing hello event (expected %d, got %f)", dasgo.FlagGatewayOpcodeHello, payload["op"].(float64))
 	}
 
 	gateway.HeartbeatInterval = time.Duration(payload["d"].(genericMap)["heartbeat_interval"].(float64))
 
 	go gateway.startHeartbeatSender()
 
-	helloEvent := new(GatewayEventHello)
+	helloEvent := new(dasgo.Hello)
 
-	if err = createGatewayEvent(payload["d"].(genericMap), helloEvent); err != nil {
+	if err = createGatewayEvent(payloadBytes, helloEvent); err != nil {
 		return err
 	}
 
@@ -195,7 +197,7 @@ func (gateway *Gateway) gatewayIdentify() error {
 
 	if gateway.canReconnect() {
 		err = gateway.sendMessage(genericMap{
-			"op": GatewayOPCodeResume,
+			"op": dasgo.FlagGatewayOpcodeResume,
 			"d": genericMap{
 				"token":      gateway.SelfBot.Token,
 				"session_id": gateway.SessionID,
@@ -207,7 +209,7 @@ func (gateway *Gateway) gatewayIdentify() error {
 		}
 
 		err = gateway.sendMessage(genericMap{
-			"op": GatewayOPCodePresenceUpdate,
+			"op": dasgo.FlagGatewayOpcodePresenceUpdate,
 			"d": genericMap{
 				"status":     STATUS,
 				"since":      0,
@@ -216,7 +218,7 @@ func (gateway *Gateway) gatewayIdentify() error {
 		}, false)
 	} else {
 		err = gateway.sendMessage(genericMap{
-			"op":       GatewayOPCodeIdentify,
+			"op":       dasgo.FlagGatewayOpcodeIdentify,
 			"compress": false,
 			"d": genericMap{
 				"token":       gateway.SelfBot.Token,
@@ -265,24 +267,34 @@ func (gateway *Gateway) gatewayIdentify() error {
 
 func (gateway *Gateway) startMessageHandler() {
 	for {
-		message, err := gateway.readMessage()
+		messageBytes, message, err := gateway.readMessage()
 
-		if err != nil { // Error occured, assume readMessage handled it.
+		if err != nil { // Error occurred, assume readMessage handled it.
 			return
 		}
 
-		fmt.Printf("%v\n\n", message)
-
 		op := message["op"].(float64)
 
-		if op == GatewayOPCodeHeartbeat { // Discord is asking for a hearbeat.
-			gateway.sendHeartbeat()
-		} else if op == GatewayOPCodeReconnect {
-			recconectEvent := new(GatewayEventReconnect)
+		switch op {
+		case dasgo.FlagGatewayOpcodeDispatch: // Dispatch event.
+			eventName := message["t"].(string)
 
-			if err = createGatewayEvent(message, recconectEvent); err != nil {
-				panic(err)
+			switch eventName {
+			case string(dasgo.FlagGatewayEventNameMessageCreate):
+				messageEvent := new(dasgo.Message)
+
+				check(createGatewayEvent(messageBytes, messageEvent))
+
+				for _, handler := range gateway.Handlers.OnMessageCreate {
+					go handler(messageEvent)
+				}
 			}
+		case dasgo.FlagGatewayOpcodeHeartbeat: // Discord is asking for a hearbeat.
+			gateway.sendHeartbeat()
+		case dasgo.FlagGatewayOpcodeHeartbeatACK: // Discord is acknowledging that we sent a heartbeat.
+			continue
+		case dasgo.FlagGatewayOpcodeReconnect:
+			recconectEvent := new(dasgo.Reconnect)
 
 			for _, handler := range gateway.Handlers.OnReconnect {
 				go handler(recconectEvent)
@@ -290,8 +302,6 @@ func (gateway *Gateway) startMessageHandler() {
 
 			gateway.reconnect()
 			return
-		} else if op == GatewayOPCodeHeartbeatACK { // Discord is acknowledging that we sent a heartbeat.
-			continue
 		}
 
 		if message["s"] != nil { // Some payloads, for example the heartbeat ack, don't contribute to the sequence ID.
@@ -301,7 +311,7 @@ func (gateway *Gateway) startMessageHandler() {
 }
 
 func (gateway *Gateway) gatewayReady() error {
-	payload, err := gateway.readMessage()
+	payloadBytes, payload, err := gateway.readMessage()
 
 	if err != nil {
 		return err
@@ -309,29 +319,24 @@ func (gateway *Gateway) gatewayReady() error {
 
 	opcode := payload["op"].(float64)
 
-	if opcode == GatewayOPCodeInvalidGateway { // Invalid session. Re-try the connection.
+	if opcode == dasgo.FlagGatewayOpcodeInvalidSession { // Invalid session. Re-try the connection.
 		<-gateway.CloseChan
 
 		return gateway.reconnect()
-	} else if opcode != GatewayOPCodeDispatch {
-		return fmt.Errorf("unexpected opcode when parsing ready event (expected %f, got %f)", GatewayOPCodeDispatch, payload["op"].(float64))
+	} else if opcode != dasgo.FlagGatewayOpcodeDispatch {
+		return fmt.Errorf("unexpected opcode when parsing ready event (expected %d, got %f)", dasgo.FlagGatewayOpcodeDispatch, payload["op"].(float64))
 	}
 
-	if err = createGatewayEvent(payload["d"].(genericMap)["user"].(genericMap), gateway.SelfBot); err != nil {
-		return err
-	}
+	check(mapstructure.Decode(payload["d"].(genericMap)["user"].(genericMap), gateway.SelfBot))
 
 	gateway.GatewayURL = payload["d"].(genericMap)["resume_gateway_url"].(string)
 	gateway.SessionID = payload["d"].(genericMap)["session_id"].(string)
 
-	readyEvent := new(GatewayEventReady)
+	readyEvent := new(dasgo.Ready)
 
-	if err = createGatewayEvent(payload["d"].(genericMap), readyEvent); err != nil {
+	if err = createGatewayEvent(payloadBytes, readyEvent); err != nil {
 		return err
 	}
-
-	readyEvent.User.Token = gateway.SelfBot.Token
-	gateway.SelfBot = readyEvent.User
 
 	for _, handler := range gateway.Handlers.OnReady {
 		go handler(readyEvent)
