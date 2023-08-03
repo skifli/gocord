@@ -10,7 +10,8 @@
 
 A performant self-bot Discord API wrapper for Go. It focuses on being powerful to use, while being easy to scale.
 
-> **Note** gocord is currently in the alpha stages of development. Once the module reaches a stable release the relevant documentation will be created.
+> [!NOTE]\
+> gocord is currently in the alpha stages of development. Once the module reaches a stable release the relevant documentation will be created.
 
 ## Features
 
