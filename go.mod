@@ -8,7 +8,7 @@ require (
 	github.com/jeandeaual/go-locale v0.0.0-20220711133428-7de61946b173 // Easy locale detection
 	github.com/mitchellh/mapstructure v1.5.0 // Easy map to struct conversion
 	github.com/switchupcb/dasgo v0.10.1 // Discord API Types
-	github.com/valyala/fasthttp v1.49.0 // Fast HTTPS requests
+	github.com/valyala/fasthttp v1.50.0 // Fast HTTPS requests
 )
 
 require (
