@@ -1,3 +1,6 @@
+> [!IMPORTANT]\
+> Development has moved to [**LuminalDev/dgate**](https://github.com/LuminalDev/dgate).
+
 # gocord
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/skifli/gocord)](https://goreportcard.com/report/github.com/skifli/gocord)
